@@ -1,0 +1,42 @@
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+
+const getApiKey = () => {
+    return fs.readFileSync('./.apikey')
+        .toString('utf-8')
+        .trim();
+};
+
+const saveEmail = (email) => {
+    if (process.argv[2] === '-d' || process.argv[2] === '-dontsave') {
+        return;
+    }
+
+    const file = path.join(os.tmpdir(), '.quickmail');
+    fs.writeFileSync(file, email);
+};
+
+const data = await fetch('https://gmailnator.p.rapidapi.com/api/emails/generate', {
+    method: 'POST',
+    headers: {
+        'x-rapidapi-key': getApiKey(),
+        'x-rapidapi-host': 'gmailnator.p.rapidapi.com',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        type: ['private_gmail_dot', 'private_gmail_plus']
+    })
+}).then(async (res) => {
+    return await res.json();
+}).catch((err) => {
+    console.error('Failed to generate email -', err);
+});
+
+if (data.message === 'You are not subscribed to this API.') {
+    console.error('You need to subscrib to the api, top right of the page i think.')
+    process.exit(-1);
+}
+
+console.log(data.email);
+saveEmail(data.email);
